@@ -1,16 +1,17 @@
 Project Update
 
-Hello All
-
 The project update will consist of your progress towards the final project. 
 
 Below is a suggested format for this update
 
-Analysis about the data 
-How large is your dataset.
+Analysis about the data: our dataset is English text from actaully tweeter data. Each line of data contains an indicator of whether the text is irony(1) or not(0). 
+How large is your dataset: Our training dataset contains 3834 lines of sentencces, and the test dataset contains 784 lines.
 How you have plan to evaluated (train/test split ratio, cross-validation)
 Have you implemented any algorithms yet?
-If not, what is you planned algorithm
+No.
+If not, what is you planned algorithm:
+We will first import the data from the training text, and we'll be using NaiveBayes algorithm for tweet classification, similar to homework 2, then use the text data set to check accurity.
+
 If yes, what is the performance
 However, this report  is open ended (just like the proposal) and you can present your current progress in your own proffered way 
 
