@@ -1,9 +1,7 @@
 
 
 
-#CSE 3521 Project # 4
-
-#by Devan Mallory (mallory.115)
+#CSE 3521 Project: Logistic Regression comparison
 
 
 #algorithm pesudo code to build the data set
@@ -12,10 +10,6 @@
 #initialize the weights for all three classes
 
 
-
-#for every epoach
-#calculate the feature matrix as the bag of word and counts for each sentence
-#get the lengths of the other three dictionaries and store them too
 
 #now we have all the necessary parameters for prediction
 
@@ -68,33 +62,16 @@ def create_word_feature_vector():
     #we create a vector of the answers as well, with
     #1 as positive, 0 as neutral, and -1 as negative
 
-    #getting all the sentences of the positive line
-    for words1 in positive_train_lines:
-        #seperating sentences into words
-        word = words1.split()
-        th_answers.append(1)
-        #for each word, add it to the dictionary
-        for w in word:
-            th_dict.append(w)
+    
 
 
-    #we now do the exact same process for the neutral and negative datasets
 
-    for words2 in neutral_train_lines:
+    for words2 in task_a_train_lines:
         wordl2 = words2.split()
         th_answers.append(0)
         for w in wordl2:
             th_dict.append(w)
 
-
-
-
-
-    for words3 in neg_train_line:
-        wordl3 = words3.split()
-        th_answers.append(-1)
-        for w in wordl3:
-            th_dict.append(w)
 
 
 
@@ -257,18 +234,12 @@ def predict_catagory(y, y_pre):
 def predict_test_category(feature_vectors, weight_values):
 
     #first, we get all the test data and load them into variables
-    test_pos_data = open("test/Positive.txt", "r")
-    test_neu_data = open("test/Neutral.txt", "r")
-    test_negg_data = open("test/Negative.txt", "r")
+    
 
-    test_pos_sens = test_pos_data.readlines()
-    test_neu_sens = test_neu_data.readlines()
-    test_negg_sens = test_negg_data.readlines()
+
 
     all_sentences = []
-    all_sentences.extend(test_pos_sens)
-    all_sentences.extend(test_neu_sens)
-    all_sentences.extend(test_negg_sens)
+ 
 
     th_dict = dict_num_count()
     th_answers = []
