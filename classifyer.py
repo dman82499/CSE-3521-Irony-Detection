@@ -4,19 +4,13 @@
 #CSE 3521 Project: Logistic Regression comparison
 
 
-#algorithm pesudo code to build the data set
-
-#read our data in as one list containing the total amount of sentences in the respective catagory
-#initialize the weights for all three classes
-
-
 
 #now we have all the necessary parameters for prediction
 
 
 #starting actual code
 import numpy
-from collections import Counter
+
 import matplotlib.pyplot
 
 #I realize that the proper pythonic way is 'import numpy as np
@@ -49,13 +43,14 @@ def create_word_feature_vector():
 
 
 
-    task_a_train_file = open("SemEval2018-Task3/datasets/SemEval2018-T3-train-taskA.txt", 'r')
+    task_a_train_file = open("SemEval2018-Task3/datasets/train/SemEval2018-T3-train-taskA_emoji.txt", 'r', encoding='utf8')
     task_a_train_lines = task_a_train_file.readlines()
 
     
     #doing some parsing here to figure out what goes where 
 
-    total_sentences = []
+    total_sentences = len(task_a_train_lines)
+    task_a_train_lines.remove(task_a_train_lines[0])
     #in this first line of code, we just initialize the bag of words vector
     th_dict = dict_num_count()
     th_answers = []
@@ -68,7 +63,8 @@ def create_word_feature_vector():
 
     for words2 in task_a_train_lines:
         wordl2 = words2.split()
-        th_answers.append(0)
+        th_answers.append(int(wordl2[1]))
+        wordl2.remove(wordl2[1])
         for w in wordl2:
             th_dict.append(w)
 
@@ -80,15 +76,17 @@ def create_word_feature_vector():
     th_dict.reset()
 
 
-    return total_sentences, th_dict, th_answers
+    return task_a_train_lines, th_dict, th_answers
 
-def initialize_weight_vectors(template:dict):
+def initialize_weight_vectors(template:dict, num_len):
     #making a contigous array just in case it could possible speed up update times
     unique_words = template.values()
-    total_weight_array = numpy.ascontiguousarray(numpy.ones((3, len(unique_words))))
+    total_weight_array = numpy.ascontiguousarray(numpy.ones((num_len, len(unique_words))))
     #weights initialized to .0005, value just taken from inpsiration of the 3/25 in class
     total_weight_array *=  .0005
     return total_weight_array
+    
+    
 
 def calculate_feature_vector(th_dict, sentence, generate_features = True):
     #calculates for only one sentence, a feature vector X_i, where i is the training sample number
@@ -100,12 +98,12 @@ def calculate_feature_vector(th_dict, sentence, generate_features = True):
     th_dict.reset()
     return value_copy
 
+
 '''A function for splitting up the correct y vector into different classes'''
 def answer_split(ans):
     #theoretically this is a bit slow since these could be initialized with numpy and in the same for loop
     #as the origenal function, but this way makes me feel more confident in the approach
     positive_ans = []
-    neutral_ans = []
     negative_ans = []
     for x in ans:
         if x == 1:
@@ -114,16 +112,13 @@ def answer_split(ans):
             positive_ans.append(0)
     for x2 in ans:
         if x2 == 0:
-            neutral_ans.append(1)
-        else:
-            neutral_ans.append(0)
-    for x3 in ans:
-        if x3 == -1:
             negative_ans.append(1)
         else:
             negative_ans.append(0)
 
-    return numpy.array(positive_ans), numpy.array(neutral_ans), numpy.array(negative_ans)
+    return numpy.array(positive_ans), numpy.array(negative_ans)
+
+
 
 
 
@@ -142,15 +137,13 @@ def make_LR_for_sentences(unique_word_dict, sentences, weight_vectors, gen_infor
     positive_z = numpy.dot(X, positive_weight_vector)
     positive_z = 1/(1+numpy.exp(-(positive_z)))
 
-    neutral_weight_vector = weight_vectors[1]
-    neutral_z = numpy.dot(X, neutral_weight_vector)
-    neutral_z = 1/(1+numpy.exp(-(neutral_z)))
 
-    negative_weight_vector= weight_vectors[2]
+
+    negative_weight_vector= weight_vectors[1]
     negative_z = numpy.dot(X, negative_weight_vector)
     negative_z = 1 / (1 + numpy.exp(-(negative_z)))
 
-    return X, positive_z, neutral_z, negative_z
+    return X, positive_z, negative_z
 
 
 
@@ -158,38 +151,32 @@ def make_LR_for_sentences(unique_word_dict, sentences, weight_vectors, gen_infor
 
 def train(template:dict_num_count, data_set, data_set_ans, weight_array, learning_rate, epoaches=10):
     data_set_m = len(data_set)
-    y_pos_ans, y_neutral_ans, y_negative_ans = answer_split(data_set_ans)
-
+    y_pos_ans, y_negative_ans = answer_split(data_set_ans)
     #setting up the loss arrays for each of the catagories
     positive_loss = []
-    neutral_loss = []
     negative_loss = []
-
     #data_set should be a list of sentences for each of the data sets, followed by their class (positive, etc)
     for x in range(0, epoaches):
         print("epoch: " + str(x))
-        X, P_y1, P_y2, P_y3 = make_LR_for_sentences(template, data_set, weight_array)
+        X, P_y1, P_y2 = make_LR_for_sentences(template, data_set, weight_array)
 
-        save_loss(P_y1, y_pos_ans, positive_loss)
-        save_loss(P_y2, y_neutral_ans, neutral_loss)
-        save_loss(P_y3, y_negative_ans, negative_loss)
-        y_pred = numpy.array([P_y3, P_y2, P_y1])
+ 
+        y_pred = numpy.array([P_y2, P_y1])
         y_pred = numpy.argmax(y_pred, axis=0)
-        y_pred -= 1
+
         #just subtracting to match the range (argmax outputs from 0, 1, 2, but answers come in -1, 0, 1 due to
         #the implementation choice
         predict_catagory(data_set_ans, y_pred)
 
 
         avg_pos_grad = numpy.dot(X.transpose(), (P_y1 - y_pos_ans)) / data_set_m
-        avg_neutral_grad = numpy.dot(X.transpose(), (P_y2 - y_neutral_ans)) / data_set_m
-        avg_negative_grad1 = numpy.dot(X.transpose(), (P_y3 - y_negative_ans)) / data_set_m
-        avg_gradients = numpy.array([avg_pos_grad, avg_neutral_grad, avg_negative_grad1])
+        avg_negative_grad1 = numpy.dot(X.transpose(), (P_y2 - y_negative_ans)) / data_set_m
+        avg_gradients = numpy.array([avg_pos_grad, avg_negative_grad1])
         avg_gradients *= learning_rate
         weight_array -= avg_gradients
 
 
-    return weight_array, positive_loss, neutral_loss, negative_loss
+    return weight_array, positive_loss, negative_loss
 
 
 def save_loss(y1, y, updated_loss: list):
@@ -226,7 +213,8 @@ def make_graph(loss, type):
 def predict_catagory(y, y_pre):
     #this will process corect and incorrect answers
     #y_pre is a vector from the function to predict the guess, by taking arg_max
-    correct = numpy.equal(numpy.array(y), y_pre)
+    y = numpy.array(y, dtype=numpy.int)
+    correct = numpy.equal(y, y_pre)
     accuracy = numpy.sum(correct)/len(y)
     print("accuracy:" + str(accuracy))
 
@@ -236,45 +224,32 @@ def predict_test_category(feature_vectors, weight_values):
     #first, we get all the test data and load them into variables
     
 
-
+    test_data = open("SemEval2018-Task3/datasets/goldtest_TaskA/SemEval2018-T3_gold_test_taskA_emoji.txt", encoding="utf8")
 
     all_sentences = []
- 
-
+    task_a_test_lines = test_data.readlines()
+    total_sentences = len(task_a_test_lines)
+    task_a_test_lines.remove(task_a_test_lines[0])
+    # in this first line of code, we just initialize the bag of words vector
     th_dict = dict_num_count()
     th_answers = []
+    # we create a vector of the answers as well, with
+    # 1 as positive, 0 as neutral, and -1 as negative
 
-    # getting all the sentences of the positive line
-    for words1 in test_pos_sens:
-        # seperating sentences into words
-        word = words1.split()
-        th_answers.append(1)
-        for w in word:
-            th_dict.append(w)
-
-    # we now do the exact same process for the neutral and negative datasets
-
-    for words2 in test_neu_sens:
+    for words2 in task_a_test_lines:
         wordl2 = words2.split()
-        th_answers.append(0)
+        th_answers.append(int(wordl2[1]))
+        wordl2.remove(wordl2[1])
         for w in wordl2:
             th_dict.append(w)
-
-    for words3 in test_negg_sens:
-        wordl3 = words3.split()
-        th_answers.append(-1)
-        for w in wordl3:
-            th_dict.append(w)
-
 
 
         # just making an array of the numbers to make the returning parameters easier
     th_dict.reset()
 
-    X, P_y1, P_y2, P_y3 = make_LR_for_sentences(feature_vectors, all_sentences, weight_values, False)
-    y_pred = numpy.array([P_y3, P_y2, P_y1])
+    X, P_y1, P_y2 = make_LR_for_sentences(feature_vectors, task_a_test_lines, weight_values, False)
+    y_pred = numpy.array([P_y2, P_y1])
     y_pred = numpy.argmax(y_pred, axis=0)
-    y_pred -= 1
     print("Test Data:\n")
     predict_catagory(th_answers, y_pred)
 
@@ -282,20 +257,17 @@ def predict_test_category(feature_vectors, weight_values):
 
 
 
-#here is the main code entry point
+#here is the main code entry point 
 
-sentences, feat ure_vectors, answers = create_word_feature_vector()
-epoachs = 1
-weight_vectors = initialize_weight_vectors(feature_vectors)
-completed_weight_vectors, positive_loss, netural_loss, negative_loss = train(feature_vectors, sentences, answers, weight_vectors, .1, epoachs)
 
-make_graph(positive_loss, 1)
-make_graph(netural_loss, 0)
-make_graph(negative_loss, -1)
-
+#task a regression
+sentences, feature_vectors, answers = create_word_feature_vector()
+epoachs = 5
+weight_vectors = initialize_weight_vectors(feature_vectors, 2)
+completed_weight_vectors, positive_loss, negative_loss = train(feature_vectors, sentences, answers, weight_vectors, .1, epoachs)
 predict_test_category(feature_vectors, completed_weight_vectors)
 
-
+#task_b feature vector
 
 
 
